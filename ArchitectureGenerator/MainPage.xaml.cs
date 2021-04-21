@@ -27,13 +27,6 @@ namespace ArchitectureGenerator
         public MainPage()
         {
             this.InitializeComponent();
-
-            Dadada();
-        }
-
-        public async void Dadada()
-        {
-            //await CppArchGenerator.GenerateAsync("C:\\Dev\\Repos\\ShadowDriver\\ShadowDriver");
         }
 
         private async void OpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -64,7 +57,6 @@ namespace ArchitectureGenerator
             
             foreach(var i in layers)
             {
-                double width = 30;
                 double unitHeight = 40;
                 double margin = 10;
                 double height = unitHeight * i.Value.Count + margin * (i.Value.Count - 1);
@@ -120,21 +112,18 @@ namespace ArchitectureGenerator
                 ArchitectureCanvas.Children.Add(button);
                 _buttonLayers.Add(button, i.Value);
             }
-            //Rectangle rectangle = new Rectangle
-            //{
-            //    Width = 100,
-            //    Height = 30,
-            //    Fill = new SolidColorBrush(Windows.UI.Colors.Blue),
-            //    Margin = new Thickness(5)
-            //};
-            //Canvas.SetTop(rectangle, 50);
-            
         }
 
         /// <summary>
         /// 记录某个层次目前的按钮已经放到什么位置了。
         /// </summary>
         Dictionary<int, double> _yPositions = new Dictionary<int, double>();
+
+        /// <summary>
+        /// 当表示模块的按钮在界面上被绘制时，其真实宽度会被重新计算，因此需要用注册此事件来重新排列按钮。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Button_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             Button button = (Button)sender;
