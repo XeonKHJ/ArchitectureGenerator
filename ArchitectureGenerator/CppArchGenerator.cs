@@ -11,7 +11,12 @@ namespace ArchitectureGenerator
 {
     class CppArchGenerator
     {
-        public async static Task<Dictionary<string, HashSet<int>>> GenerateAsync(StorageFolder dict)
+        public Dictionary<string, List<string>> FileLinkList { private set;  get; } = new Dictionary<string, List<string>>();
+        public CppArchGenerator()
+        {
+
+        }
+        public async Task<Dictionary<string, HashSet<int>>> GenerateAsync(StorageFolder dict)
         {
             //var dict = await Windows.Storage.StorageFolder.GetFolderFromPathAsync("C:\\Dev\\Repos\\ShadowDriver\\ShadowDriver");
             var fileInfos = await dict.GetFilesAsync();
@@ -35,7 +40,7 @@ namespace ArchitectureGenerator
                 byte[] fileData = buffer.ToArray();
                 Encoding encoding = Encoding.GetEncoding("GBK");
                 string text = encoding.GetString(fileData, 0, fileData.Length);
-
+                
                 var lines = text.Split(Environment.NewLine);
                 //string line = string.Empty;
                 List<string> includeFiles = new List<string>();
@@ -119,7 +124,7 @@ namespace ArchitectureGenerator
                 }
 
             }
-
+            FileLinkList = fileLinkList;
             return layers;
         }
     }

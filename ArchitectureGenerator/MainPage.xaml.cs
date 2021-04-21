@@ -28,17 +28,18 @@ namespace ArchitectureGenerator
         {
             this.InitializeComponent();
         }
-
+        CppArchGenerator generator;
         private async void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
             FolderPicker picker = new FolderPicker();
             picker.FileTypeFilter.Add("*");
 
             var folder = await picker.PickSingleFolderAsync();
-            if(folder != null)
+            if (folder != null)
             {
-                var layers = await CppArchGenerator.GenerateAsync(folder);
-
+                generator = new CppArchGenerator();
+                var layers = await generator.GenerateAsync(folder);
+                _fileLayersMapper = layers;
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
                     MakeRectanges(layers);
@@ -50,20 +51,22 @@ namespace ArchitectureGenerator
         /// 用于记录每个按钮所代表的模块在第几层
         /// </summary>
         Dictionary<Button, HashSet<int>> _buttonLayers = new Dictionary<Button, HashSet<int>>();
+        Dictionary<string, Rectangle> _buttonFileNameMapper = new Dictionary<string, Rectangle>();
+        Dictionary<string, HashSet<int>> _fileLayersMapper = new Dictionary<string, HashSet<int>>();
         public void MakeRectanges(Dictionary<string, HashSet<int>> layers)
         {
             Dictionary<int, int> layerItemCount = new Dictionary<int, int>();
             Dictionary<string, Button> rectangels = new Dictionary<string, Button>();
-            
-            foreach(var i in layers)
+
+            foreach (var i in layers)
             {
                 double unitHeight = 40;
                 double margin = 10;
                 double height = unitHeight * i.Value.Count + margin * (i.Value.Count - 1);
 
-                foreach(var j in i.Value)
+                foreach (var j in i.Value)
                 {
-                    if(!layerItemCount.ContainsKey(j))
+                    if (!layerItemCount.ContainsKey(j))
                     {
                         layerItemCount[j] = 0;
                     }
@@ -71,7 +74,7 @@ namespace ArchitectureGenerator
                 }
 
                 int maxJ = 0;
-                foreach(var j in i.Value)
+                foreach (var j in i.Value)
                 {
                     maxJ = layerItemCount[j] > maxJ ? layerItemCount[j] : maxJ;
                 }
@@ -79,12 +82,17 @@ namespace ArchitectureGenerator
 
                 Button button = new Button()
                 {
-                    Padding = new Thickness(5,0,5,0),
+                    Padding = new Thickness(5, 0, 5, 0),
                     Margin = new Thickness(0),
                     Height = height
                 };
+
+                button.PointerEntered += Button_PointerEntered;
+                button.PointerExited += Button_PointerExited;
+
                 Grid grid = new Grid();
                 button.Content = grid;
+                button.Tag = i.Key;
 
                 Rectangle matchedRectangle = new Rectangle()
                 {
@@ -92,7 +100,7 @@ namespace ArchitectureGenerator
                     Height = height,
                     //Margin = new Thickness(5)
                 };
-
+                _buttonFileNameMapper.Add(i.Key, matchedRectangle);
                 TextBlock textBlock = new TextBlock()
                 {
                     Text = i.Key,
@@ -101,7 +109,7 @@ namespace ArchitectureGenerator
                     Padding = new Thickness(0),
                     Margin = new Thickness(0)
                 };
-                
+
                 grid.Children.Add(matchedRectangle);
                 rectangels.Add(i.Key, button);
                 grid.Children.Add(textBlock);
@@ -113,6 +121,44 @@ namespace ArchitectureGenerator
                 _buttonLayers.Add(button, i.Value);
             }
         }
+
+        private void Button_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            var fileName = (string)((Button)sender).Tag;
+
+            if (generator.FileLinkList.ContainsKey(fileName))
+            {
+                var linkedFiles = generator.FileLinkList[fileName];
+
+                foreach (var file in linkedFiles)
+                {
+                    if (_buttonFileNameMapper.ContainsKey(file))
+                    {
+                        (_buttonFileNameMapper[file]).Fill = null;
+                    }
+                }
+            }
+        }
+
+        private void Button_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            var fileName = (string)((Button)sender).Tag;
+
+            if (generator.FileLinkList.ContainsKey(fileName))
+            {
+                var linkedFiles = generator.FileLinkList[fileName];
+
+                foreach (var file in linkedFiles)
+                {
+                    if (_buttonFileNameMapper.ContainsKey(file))
+                    {
+                        (_buttonFileNameMapper[file]).Fill = new SolidColorBrush(Windows.UI.Colors.AliceBlue);
+                    }
+                }
+            }
+        }
+
+       
 
         /// <summary>
         /// 记录某个层次目前的按钮已经放到什么位置了。
@@ -129,12 +175,12 @@ namespace ArchitectureGenerator
             Button button = (Button)sender;
 
             var layerSet = _buttonLayers[button];
-            if(layerSet != null)
+            if (layerSet != null)
             {
                 double maxY = 0;
-                foreach(var layer in layerSet)
+                foreach (var layer in layerSet)
                 {
-                    if(!_yPositions.ContainsKey(layer))
+                    if (!_yPositions.ContainsKey(layer))
                     {
                         _yPositions[layer] = 0;
                     }
@@ -146,7 +192,7 @@ namespace ArchitectureGenerator
 
                 double newY = maxY + 10;
                 Canvas.SetLeft(button, newY);
-                foreach(var layer in layerSet)
+                foreach (var layer in layerSet)
                 {
                     _yPositions[layer] = newY + button.ActualWidth;
                 }
@@ -154,7 +200,7 @@ namespace ArchitectureGenerator
                 ArchitectureCanvas.Width = newY + button.ActualWidth + 10;
             }
 
-            
+
         }
     }
 }
